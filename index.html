@@ -1,39 +1,27 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="id">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>FortaPOS Multi-Device</title>
-    <meta name="description" content="Sistem kasir POS modern multi-device dengan Tailwind CSS, Firebase Firestore real-time sync, printer thermal ESC/POS, dan scanner barcode otomatis." />
+    <meta name="description" content="FortaPOS Multi-Device - Sistem kasir POS modern multi-device dengan Tailwind CSS, Firebase Firestore real-time sync, printer thermal ESC/POS, dan scanner barcode otomatis." />
     <meta property="og:title" content="FortaPOS Multi-Device" />
-    <meta property="og:description" content="Sistem kasir POS modern multi-device dengan Tailwind CSS, Firebase Firestore real-time sync, printer thermal ESC/POS, dan scanner barcode otomatis." />
+    <meta property="og:description" content="FortaPOS Multi-Device - Sistem kasir POS modern multi-device dengan Tailwind CSS, Firebase Firestore real-time sync, printer thermal ESC/POS, dan scanner barcode otomatis." />
     <meta property="og:type" content="website" />
     <meta name="twitter:card" content="summary_large_image" />
 
     <script>
-      (function() {
-        try {
-          var _origFetch = window.fetch ? window.fetch.bind(window) : null;
-          Object.defineProperty(window, 'fetch', {
-            get: function() { return _origFetch; },
-            set: function(fn) { _origFetch = fn; },
-            configurable: true,
-            enumerable: true
-          });
-        } catch (e) {
-          try {
-            var proto = Object.getPrototypeOf(window);
-            if (proto) {
-              Object.defineProperty(proto, 'fetch', {
-                get: function() { return _origFetch; },
-                set: function(fn) { _origFetch = fn; },
-                configurable: true,
-                enumerable: true
-              });
-            }
-          } catch (e2) {}
-        }
-      })();
+        (function() {
+            try {
+                let _fetch = window.fetch ? window.fetch.bind(window) : null;
+                Object.defineProperty(window, 'fetch', {
+                    get() { return _fetch; },
+                    set(fn) { _fetch = fn; },
+                    configurable: true,
+                    enumerable: true
+                });
+            } catch (e) {}
+        })();
     </script>
 
     <!-- Tailwind CSS CDN -->
@@ -2092,7 +2080,7 @@
         // Kredensial preset terkunci permanen - otomatis terhubung
         // ==========================================
         const firebaseConfig = {
-            apiKey: "AIzaSyDnxQ5nnrXxJ6lphoYthss5NtwIFmm5JgY",
+  apiKey: "AIzaSyDnxQ5nnrXxJ6lphoYthss5NtwIFmm5JgY",
   authDomain: "fortapos-multi-device.firebaseapp.com",
   projectId: "fortapos-multi-device",
   storageBucket: "fortapos-multi-device.firebasestorage.app",
@@ -3113,9 +3101,8 @@ function initLocalStorageData() {
         async function logoutApp() {
             if (currentUser && currentUser.role === 'employee' && currentUser.employeeDocId) {
                 try {
-                    const sId = currentUser.storeId || currentStoreId;
-                    if (isFirebaseConfigured && db && sId) {
-                        await db.collection('stores').doc(sId).collection('employees').doc(currentUser.employeeDocId).update({
+                    if (isFirebaseConfigured && db) {
+                        await db.collection('stores').doc(currentStoreId || currentUser.storeId).collection('employees').doc(currentUser.employeeDocId).update({
                             status: 'offline',
                             lastActive: new Date().toISOString()
                         });
@@ -3142,13 +3129,10 @@ function initLocalStorageData() {
         window.addEventListener('beforeunload', function() {
             if (currentUser && currentUser.role === 'employee' && currentUser.employeeDocId && isFirebaseConfigured && db) {
                 try {
-                    const sId = currentUser.storeId || currentStoreId;
-                    if (sId) {
-                        db.collection('stores').doc(sId).collection('employees').doc(currentUser.employeeDocId).update({
-                            status: 'offline',
-                            lastActive: new Date().toISOString()
-                        });
-                    }
+                    db.collection('stores').doc(currentUser.storeId || currentStoreId).collection('employees').doc(currentUser.employeeDocId).update({
+                        status: 'offline',
+                        lastActive: new Date().toISOString()
+                    });
                 } catch (e) {}
             }
         });
@@ -3252,9 +3236,7 @@ function initLocalStorageData() {
             }
 
             if (isFirebaseConfigured && db) {
-                const storeRef = db.collection('stores').doc(currentStoreId);
-
-                const unsubStore = storeRef.onSnapshot(doc => {
+                const unsubStore = db.collection('stores').doc(currentStoreId).onSnapshot(doc => {
                     if (doc.exists) {
                         dbSettings = { ...dbSettings, ...doc.data() };
                         
@@ -3265,7 +3247,7 @@ function initLocalStorageData() {
                 });
                 unsubscribers.push(unsubStore);
 
-                const unsubProd = storeRef.collection('products').onSnapshot(snapshot => {
+                const unsubProd = db.collection('stores').doc(currentStoreId).collection('products').onSnapshot(snapshot => {
                     dbProducts = [];
                     snapshot.forEach(doc => {
                         dbProducts.push({ firestoreId: doc.id, ...doc.data() });
@@ -3286,7 +3268,7 @@ function initLocalStorageData() {
                 });
                 unsubscribers.push(unsubProd);
 
-                const unsubCat = storeRef.collection('categories').doc('list').onSnapshot(doc => {
+                const unsubCat = db.collection('stores').doc(currentStoreId).collection('categories').doc('list').onSnapshot(doc => {
                     if (doc.exists && doc.data().list) {
                         dbCategories = doc.data().list;
                     }
@@ -3295,7 +3277,7 @@ function initLocalStorageData() {
                 });
                 unsubscribers.push(unsubCat);
 
-                const unsubUnit = storeRef.collection('units').doc('list').onSnapshot(doc => {
+                const unsubUnit = db.collection('stores').doc(currentStoreId).collection('units').doc('list').onSnapshot(doc => {
                     if (doc.exists && doc.data().list) {
                         dbUnits = doc.data().list;
                         renderUnits();
@@ -3303,7 +3285,7 @@ function initLocalStorageData() {
                 });
                 unsubscribers.push(unsubUnit);
 
-                const unsubCust = storeRef.collection('customers').onSnapshot(snapshot => {
+                const unsubCust = db.collection('stores').doc(currentStoreId).collection('customers').onSnapshot(snapshot => {
                     dbCustomers = [];
                     snapshot.forEach(doc => {
                         dbCustomers.push({ firestoreId: doc.id, ...doc.data() });
@@ -3320,7 +3302,7 @@ function initLocalStorageData() {
                 });
                 unsubscribers.push(unsubCust);
 
-                const unsubTrx = storeRef.collection('transactions').onSnapshot(snapshot => {
+                const unsubTrx = db.collection('stores').doc(currentStoreId).collection('transactions').onSnapshot(snapshot => {
                     dbTransactions = [];
                     snapshot.forEach(doc => {
                         dbTransactions.push({ firestoreId: doc.id, ...doc.data() });
@@ -3339,7 +3321,7 @@ function initLocalStorageData() {
                 });
                 unsubscribers.push(unsubTrx);
 
-                const unsubEmp = storeRef.collection('employees').onSnapshot(snapshot => {
+                const unsubEmp = db.collection('stores').doc(currentStoreId).collection('employees').onSnapshot(snapshot => {
                     dbEmployees = [];
                     snapshot.forEach(doc => {
                         dbEmployees.push({ firestoreId: doc.id, ...doc.data() });
@@ -3349,7 +3331,7 @@ function initLocalStorageData() {
                 });
                 unsubscribers.push(unsubEmp);
 
-                const unsubLogs = storeRef.collection('activityLogs').onSnapshot(snapshot => {
+                const unsubLogs = db.collection('stores').doc(currentStoreId).collection('activityLogs').onSnapshot(snapshot => {
                     dbActivityLogs = [];
                     snapshot.forEach(doc => {
                         dbActivityLogs.push({ firestoreId: doc.id, ...doc.data() });
@@ -3386,7 +3368,7 @@ function initLocalStorageData() {
                 timestamp: new Date().toISOString()
             };
 
-            if (isFirebaseConfigured && db && currentStoreId) {
+            if (isFirebaseConfigured && db) {
                 try {
                     await db.collection('stores').doc(currentStoreId).collection('activityLogs').add(entry);
                 } catch (err) {
@@ -4644,7 +4626,7 @@ function initLocalStorageData() {
                     if (prod) {
                         const newStock = Math.max(0, prod.stock - item.qty);
                         prod.stock = newStock;
-                        if (isFirebaseConfigured && db && currentStoreId) {
+                        if (isFirebaseConfigured && db) {
                             await db.collection('stores').doc(currentStoreId).collection('products').doc(item.firestoreId).update({ stock: newStock });
                         }
                     }
@@ -4653,6 +4635,7 @@ function initLocalStorageData() {
 
                 const customerName = document.getElementById('cartCustomerSelect').value;
                 const transactionId = 'TRX-' + Date.now().toString().slice(-6);
+                const cashierUid = currentUser ? (currentUser.employeeDocId || currentUser.uid || (currentUser.role === 'owner' ? 'owner' : 'kasir')) : 'unknown';
                 const newTrx = {
                     storeId: currentStoreId,
                     id: transactionId,
@@ -4664,10 +4647,11 @@ function initLocalStorageData() {
                     cash,
                     change,
                     customer: customerName,
-                    cashier: currentUser ? currentUser.name : 'Kasir'
+                    cashier: currentUser ? currentUser.name : 'Kasir',
+                    cashier_uid: cashierUid
                 };
 
-                if (isFirebaseConfigured && db && currentStoreId) {
+                if (isFirebaseConfigured && db) {
                     const docRef = await db.collection('stores').doc(currentStoreId).collection('transactions').add(newTrx);
                     newTrx.firestoreId = docRef.id;
                 } else {
@@ -5280,14 +5264,12 @@ function initLocalStorageData() {
             };
 
             try {
-                if (isFirebaseConfigured && db && currentStoreId) {
-                    const productsCol = db.collection('stores').doc(currentStoreId).collection('products');
+                if (isFirebaseConfigured && db) {
                     if (editId) {
-                        await productsCol.doc(editId).update(productData);
+                        await db.collection('stores').doc(currentStoreId).collection('products').doc(editId).update(productData);
                     } else {
                         productData.createdAt = new Date().toISOString();
-                        const docRef = await productsCol.add(productData);
-                        productData.firestoreId = docRef.id;
+                        await db.collection('stores').doc(currentStoreId).collection('products').add(productData);
                     }
                 } else {
                     if (editId) {
@@ -5318,7 +5300,7 @@ function initLocalStorageData() {
         function deleteProduct(firestoreId) {
             showCustomConfirm('Hapus Barang', 'Apakah Anda yakin ingin menghapus barang ini dari stok?', async () => {
                 try {
-                    if (isFirebaseConfigured && db && currentStoreId) {
+                    if (isFirebaseConfigured && db) {
                         await db.collection('stores').doc(currentStoreId).collection('products').doc(firestoreId).delete();
                     } else {
                         dbProducts = dbProducts.filter(p => p.firestoreId !== firestoreId);
@@ -5339,11 +5321,11 @@ function initLocalStorageData() {
 
             showCustomConfirm('Hapus Produk Terpilih', `Yakin ingin menghapus ${checkedBoxes.length} produk terpilih?`, async () => {
                 try {
-                    if (isFirebaseConfigured && db && currentStoreId) {
+                    if (isFirebaseConfigured && db) {
                         const batch = db.batch();
-                        const productsCol = db.collection('stores').doc(currentStoreId).collection('products');
                         checkedBoxes.forEach(cb => {
-                            batch.delete(productsCol.doc(cb.value));
+                            const ref = db.collection('stores').doc(currentStoreId).collection('products').doc(cb.value);
+                            batch.delete(ref);
                         });
                         await batch.commit();
                     } else {
@@ -5363,13 +5345,10 @@ function initLocalStorageData() {
         function clearAllProducts() {
             showCustomConfirm('Kosongkan Semua Stok', 'PERINGATAN: Semua data produk akan dihapus permanen!', async () => {
                 try {
-                    if (isFirebaseConfigured && db && currentStoreId) {
+                    if (isFirebaseConfigured && db) {
                         const batch = db.batch();
-                        const productsCol = db.collection('stores').doc(currentStoreId).collection('products');
                         dbProducts.forEach(p => {
-                            if (p.firestoreId) {
-                                batch.delete(productsCol.doc(p.firestoreId));
-                            }
+                            batch.delete(db.collection('stores').doc(currentStoreId).collection('products').doc(p.firestoreId));
                         });
                         await batch.commit();
                     } else {
@@ -5443,9 +5422,8 @@ function initLocalStorageData() {
                     }
 
                     let count = 0;
-                    if (isFirebaseConfigured && db && currentStoreId) {
+                    if (isFirebaseConfigured && db) {
                         const batch = db.batch();
-                        const productsCol = db.collection('stores').doc(currentStoreId).collection('products');
                         json.forEach(row => {
                             const barcode = row['Barcode'] ? String(row['Barcode']) : ('899' + Math.floor(10000 + Math.random() * 90000));
                             const name = row['Nama Produk'] || row['Nama Barang'] || 'Produk Tanpa Nama';
@@ -5456,7 +5434,7 @@ function initLocalStorageData() {
                             const sellPrice = parseFloat(row['Harga Jual']) || 0;
                             const description = row['Keterangan'] || '';
 
-                            const newRef = productsCol.doc();
+                            const newRef = db.collection('stores').doc(currentStoreId).collection('products').doc();
                             batch.set(newRef, {
                                 storeId: currentStoreId,
                                 barcode, name, category, unit,
@@ -5518,9 +5496,8 @@ function initLocalStorageData() {
             };
 
             try {
-                if (isFirebaseConfigured && db && currentStoreId) {
-                    const docRef = await db.collection('stores').doc(currentStoreId).collection('employees').add(empData);
-                    empData.firestoreId = docRef.id;
+                if (isFirebaseConfigured && db) {
+                    await db.collection('stores').doc(currentStoreId).collection('employees').add(empData);
                 } else {
                     empData.firestoreId = 'emp_' + Date.now();
                     dbEmployees.unshift(empData);
@@ -5540,7 +5517,7 @@ function initLocalStorageData() {
         async function deleteEmployee(firestoreId) {
             showCustomConfirm('Hapus Karyawan', 'Yakin ingin menghapus akses login karyawan ini?', async () => {
                 try {
-                    if (isFirebaseConfigured && db && currentStoreId) {
+                    if (isFirebaseConfigured && db) {
                         await db.collection('stores').doc(currentStoreId).collection('employees').doc(firestoreId).delete();
                     } else {
                         dbEmployees = dbEmployees.filter(e => e.firestoreId !== firestoreId);
@@ -5596,7 +5573,7 @@ function initLocalStorageData() {
             }
             dbCategories.push(name);
             try {
-                if (isFirebaseConfigured && db && currentStoreId) {
+                if (isFirebaseConfigured && db) {
                     await db.collection('stores').doc(currentStoreId).collection('categories').doc('list').set({ list: dbCategories });
                 }
                 document.getElementById('newCategoryName').value = '';
@@ -5611,7 +5588,7 @@ function initLocalStorageData() {
         async function deleteCategory(name) {
             dbCategories = dbCategories.filter(c => c !== name);
             try {
-                if (isFirebaseConfigured && db && currentStoreId) {
+                if (isFirebaseConfigured && db) {
                     await db.collection('stores').doc(currentStoreId).collection('categories').doc('list').set({ list: dbCategories });
                 }
                 renderCategories();
@@ -5644,7 +5621,7 @@ function initLocalStorageData() {
             }
             dbUnits.push(name);
             try {
-                if (isFirebaseConfigured && db && currentStoreId) {
+                if (isFirebaseConfigured && db) {
                     await db.collection('stores').doc(currentStoreId).collection('units').doc('list').set({ list: dbUnits });
                 }
                 document.getElementById('newUnitName').value = '';
@@ -5658,7 +5635,7 @@ function initLocalStorageData() {
         async function deleteUnit(name) {
             dbUnits = dbUnits.filter(u => u !== name);
             try {
-                if (isFirebaseConfigured && db && currentStoreId) {
+                if (isFirebaseConfigured && db) {
                     await db.collection('stores').doc(currentStoreId).collection('units').doc('list').set({ list: dbUnits });
                 }
                 renderUnits();
@@ -5693,14 +5670,12 @@ function initLocalStorageData() {
             };
 
             try {
-                if (isFirebaseConfigured && db && currentStoreId) {
-                    const custCol = db.collection('stores').doc(currentStoreId).collection('customers');
+                if (isFirebaseConfigured && db) {
                     if (customerId) {
-                        await custCol.doc(customerId).update(customerData);
+                        await db.collection('stores').doc(currentStoreId).collection('customers').doc(customerId).update(customerData);
                     } else {
                         customerData.createdAt = new Date().toISOString();
-                        const docRef = await custCol.add(customerData);
-                        customerData.firestoreId = docRef.id;
+                        await db.collection('stores').doc(currentStoreId).collection('customers').add(customerData);
                     }
                 } else {
                     if (customerId) {
@@ -5754,7 +5729,7 @@ function initLocalStorageData() {
 
         async function deleteCustomer(firestoreId) {
             try {
-                if (isFirebaseConfigured && db && currentStoreId) {
+                if (isFirebaseConfigured && db) {
                     await db.collection('stores').doc(currentStoreId).collection('customers').doc(firestoreId).delete();
                 } else {
                     dbCustomers = dbCustomers.filter(c => c.firestoreId !== firestoreId);
@@ -5987,16 +5962,17 @@ function initLocalStorageData() {
             // HAK AKSES KARYAWAN vs OWNER (ACCESS CONTROL KETAT)
             // ==============================================================
             if (!isOwner) {
-                // Karyawan HANYA BOLEH melihat riwayat transaksinya sendiri.
+                // Karyawan HANYA BOLEH melihat riwayat transaksinya sendiri (dicek via cashier_uid / nama kasir).
                 // Karyawan A tidak bisa melihat Karyawan B, dan TIDAK BOLEH melihat transaksi Owner!
+                const currentEmpId = currentUser ? (currentUser.employeeDocId || currentUser.uid) : null;
                 const currentEmpName = (currentUser ? currentUser.name : '').trim().toLowerCase();
-                filtered = filtered.filter(t => (t.cashier || '').trim().toLowerCase() === currentEmpName);
+                filtered = filtered.filter(t => (currentEmpId && t.cashier_uid === currentEmpId) || ((t.cashier || '').trim().toLowerCase() === currentEmpName));
             } else {
                 // Owner memegang hak penuh melihat seluruh transaksi semua karyawan & transaksi Owner sendiri.
-                // Jika Owner memilih "Filter Karyawan", tabel otomatis memfilter sesuai nama yang dipilih.
+                // Jika Owner memilih "Filter Karyawan", tabel otomatis memfilter sesuai UID atau nama yang dipilih.
                 if (selectedEmployee) {
                     const targetCashier = selectedEmployee.toLowerCase();
-                    filtered = filtered.filter(t => (t.cashier || '').trim().toLowerCase() === targetCashier);
+                    filtered = filtered.filter(t => (t.cashier_uid && t.cashier_uid === selectedEmployee) || ((t.cashier || '').trim().toLowerCase() === targetCashier));
                 }
             }
 
@@ -6392,7 +6368,7 @@ function initLocalStorageData() {
         async function deleteTransaction(firestoreId) {
             showCustomConfirm('Hapus Transaksi', 'Apakah Anda yakin ingin menghapus catatan transaksi ini?', async () => {
                 try {
-                    if (isFirebaseConfigured && db && currentStoreId) {
+                    if (isFirebaseConfigured && db) {
                         await db.collection('stores').doc(currentStoreId).collection('transactions').doc(firestoreId).delete();
                     } else {
                         dbTransactions = dbTransactions.filter(t => t.firestoreId !== firestoreId);
@@ -6415,11 +6391,10 @@ function initLocalStorageData() {
 
             showCustomConfirm('Hapus Transaksi Terpilih', `Yakin ingin menghapus ${checked.length} riwayat transaksi terpilih?`, async () => {
                 try {
-                    if (isFirebaseConfigured && db && currentStoreId) {
+                    if (isFirebaseConfigured && db) {
                         const batch = db.batch();
-                        const trxCol = db.collection('stores').doc(currentStoreId).collection('transactions');
                         checked.forEach(cb => {
-                            batch.delete(trxCol.doc(cb.value));
+                            batch.delete(db.collection('stores').doc(currentStoreId).collection('transactions').doc(cb.value));
                         });
                         await batch.commit();
                     } else {
@@ -6441,13 +6416,10 @@ function initLocalStorageData() {
         async function clearAllHistory() {
             showCustomConfirm('Kosongkan Semua Riwayat', 'PERINGATAN: Seluruh riwayat transaksi akan dihapus permanen!', async () => {
                 try {
-                    if (isFirebaseConfigured && db && currentStoreId) {
+                    if (isFirebaseConfigured && db) {
                         const batch = db.batch();
-                        const trxCol = db.collection('stores').doc(currentStoreId).collection('transactions');
                         dbTransactions.forEach(t => {
-                            if (t.firestoreId) {
-                                batch.delete(trxCol.doc(t.firestoreId));
-                            }
+                            batch.delete(db.collection('stores').doc(currentStoreId).collection('transactions').doc(t.firestoreId));
                         });
                         await batch.commit();
                     } else {
@@ -6905,7 +6877,7 @@ function initLocalStorageData() {
                 const encryptedPkg = await encryptDataE2E(snapshotData);
                 encryptedPkg.checksum = checksum;
 
-                if (isFirebaseConfigured && db && currentStoreId) {
+                if (isFirebaseConfigured && db) {
                     await db.collection('stores').doc(currentStoreId).collection('backups').doc(dateKey).set(encryptedPkg);
                 }
 
@@ -7051,12 +7023,11 @@ function initLocalStorageData() {
                         loadSettingsToUI();
                     }
 
-                    if (isFirebaseConfigured && db && currentStoreId) {
+                    if (isFirebaseConfigured && db) {
                         showToast('Menyinkronkan data pemulihan ke cloud Firestore...', 'info');
                         const batch = db.batch();
-                        const prodCol = db.collection('stores').doc(currentStoreId).collection('products');
                         dbProducts.forEach(p => {
-                            const ref = prodCol.doc(p.firestoreId || 'prod_' + Math.random().toString(36).substring(2));
+                            const ref = db.collection('stores').doc(currentStoreId).collection('products').doc(p.firestoreId || 'prod_' + Math.random().toString(36).substring(2));
                             batch.set(ref, { storeId: currentStoreId, ...p });
                         });
                         await batch.commit();
